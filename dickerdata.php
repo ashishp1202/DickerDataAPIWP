@@ -1,6 +1,7 @@
 <?php
 define('ACCESSTOKEN', '237082ED-EB96-4738-89E3-5C2F1ADD0C7F');
 define('ACOOUNTCODE', '325026');
+define('PRODUCTSKUSARR', array("8D8K2AA", "83Z45AA", "83Z51AA", "A4LZ8AA", "NEATBAR2-PAD-BUNDLE", "NEATBARPRO-PAD-BUNDLE", "A40-031", "A30-020"));
 function generateUuidV4()
 {
   $data = random_bytes(16);
@@ -44,8 +45,6 @@ function AVP_AccessKeyRequest()
   ));
 
   $response = curl_exec($curl);
-  echo "<pre>";
-  print_r(json_decode($response));
   $jsonResponse = json_decode($response);
   curl_close($curl);
   if (isset($jsonResponse->AccessKey) && !empty($jsonResponse->AccessKey)) {
@@ -54,11 +53,14 @@ function AVP_AccessKeyRequest()
 }
 
 
-function AVP_GetProductPriceBySKU($sku, $accessKey)
+function AVP_GetProductPriceBySKU(array $sku = PRODUCTSKUSARR)
 {
+  $accessKey = AVP_AccessKeyRequest();
   $transactionID = generateUuidV4();
   $curl = curl_init();
-
+  $postData = json_encode([
+    'Products' => $sku
+  ]);
   curl_setopt_array($curl, array(
     CURLOPT_URL => 'https://b2b-api-test.dickerdata.com.au/api/DickerData/GetPrice',
     CURLOPT_RETURNTRANSFER => true,
@@ -68,12 +70,7 @@ function AVP_GetProductPriceBySKU($sku, $accessKey)
     CURLOPT_FOLLOWLOCATION => true,
     CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
     CURLOPT_CUSTOMREQUEST => 'POST',
-    CURLOPT_POSTFIELDS => '{
-  "Products": [
-    "' . $sku . '"
-  ]
-}
-',
+    CURLOPT_POSTFIELDS => $postData,
     CURLOPT_HTTPHEADER => array(
       'Content-Type: application/json',
       'Accept: application/json',
@@ -85,7 +82,5 @@ function AVP_GetProductPriceBySKU($sku, $accessKey)
   ));
 
   $response = curl_exec($curl);
-  echo "<pre>";
-  print_r($response);
-  exit();
+  return json_decode($response);
 }
