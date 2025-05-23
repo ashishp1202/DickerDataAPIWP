@@ -9,7 +9,6 @@ add_action('init', function () {
 // Step 2: Hook your function to it
 add_action('dickerdata_hourly_cron_hook', 'dickerdata_custom_hourly_function');
 
-//dickerdata_custom_hourly_function();
 function dickerdata_custom_hourly_function()
 {
   $getProductDataBySKU = AVP_GetProductPriceBySKU();
@@ -83,8 +82,10 @@ function add_custom_product_from_object_dickerdata($product_data)
     $product->set_weight($product_data->Weight);
   }
 
+
   // Save product
   $product_id = $product->save();
+  add_post_meta($product_id, '_dicker_product_unit_price', $product_data->UnitPrice, true);
 
   if (!empty($product_data->Brand)) {
     $brand = sanitize_text_field($product_data->Brand);

@@ -84,3 +84,74 @@ function AVP_GetProductPriceBySKU(array $sku = PRODUCTSKUSARR)
   $response = curl_exec($curl);
   return json_decode($response);
 }
+
+
+function AVP_CreateOrder($order_id = "TESKJS")
+{
+  $accessKey = AVP_AccessKeyRequest();
+  $transactionID = generateUuidV4();
+  $curl = curl_init();
+
+  curl_setopt_array($curl, array(
+    CURLOPT_URL => 'https://b2b-api-test.dickerdata.com.au//api/Order/CreateOrder',
+    CURLOPT_RETURNTRANSFER => true,
+    CURLOPT_ENCODING => '',
+    CURLOPT_MAXREDIRS => 10,
+    CURLOPT_TIMEOUT => 0,
+    CURLOPT_FOLLOWLOCATION => true,
+    CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
+    CURLOPT_CUSTOMREQUEST => 'POST',
+    CURLOPT_POSTFIELDS => '{
+  "OrderIn": {
+    "Header": {
+      "OrderNumber":       "' . $order_id . '",
+      "BranchAccountCode": "325026"
+    },
+    "Delivery": {
+      "CompanyName": "Test Company Pty Ltd",
+      "DeliveryContact": {
+        "FirstName": "John",
+        "LastName":  "Tester",
+        "Email":     "john.tester@example.com",
+        "Phone":     "0412 345 678"
+      },
+      "DeliveryAddress": {
+        "CompanyName": "Test Company Pty Ltd",
+        "Address01":   "1 Test Street",
+        "Address02":   "Suite 100",
+        "Suburb":      "Sydney",
+        "State":       "NSW",
+        "Postcode":    "2000",
+        "Country":     "AU"
+      },
+      "Attention":      "Attn: John Tester",
+      "PartShipped":    false,
+      "ShippingMethod": "DropShip"
+    },
+    "Items": [
+      {
+        "Product": {
+          "PartNumber":     "83Z45AA",
+          "Quantity":       1,
+          "UnitPrice":      2000,
+          "UseSystemPrice": true
+        }
+      }
+    ]
+  }
+}
+',
+    CURLOPT_HTTPHEADER => array(
+      'Content-Type: application/json',
+      'Accept: application/json',
+      'DD-TransactionID: ' . $transactionID,
+      'DD-ApiVersion: v1',
+      'Authorization: Bearer ' . $accessKey,
+      //'Cookie: __cf_bm=9lIxTCqhM2wE83GfKPK_8bFd4gEh7fszHXumfRld67M-1747289786-1.0.1.1-1W5ayr_ODEbfgd9tpTDPv.DRzf.6LwH8rPKe1ieAtFOf2CdQt_mYd8x68L_oOYCR3E4hHIUwq6OEO2z5pxeCxtnx5zQOaE7CGlEV9uvqArQ'
+    ),
+  ));
+
+  $response = curl_exec($curl);
+
+  return json_decode($response);
+}
