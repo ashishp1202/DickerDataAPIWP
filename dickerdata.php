@@ -85,15 +85,35 @@ function AVP_GetProductPriceBySKU(array $sku = PRODUCTSKUSARR)
   return json_decode($response);
 }
 
-
-function AVP_CreateOrder($order_id = "TESKJS")
+/**
+ * Create an order to Dicker Data after WooCommerce order success
+ * @param int $order_id
+ */
+function AVP_CreateOrder(int $order_id)
 {
+  $order = wc_get_order($order_id);
   $accessKey = AVP_AccessKeyRequest();
   $transactionID = generateUuidV4();
   $curl = curl_init();
-
+  $items = [];
+  foreach ($order->get_items() as $item_id => $item) {
+    $product = $item->get_product();
+    if (! $product) continue;
+    $dicker_product_unit_price = get_post_meta($product->get_id(), '_dicker_product_unit_price', true);
+    $items[] = [
+      'Product' => [
+        'UseSystemPrice'         => true,
+        'Quantity'     => $item->get_quantity(),
+        'UnitPrice'        => $dicker_product_unit_price ? $dicker_product_unit_price : $item->get_total(),
+        'PartNumber'          => $product ? $product->get_sku() : '',
+      ]
+    ];
+  }
+  echo "<pre>";
+  print_r(json_encode($items));
+  $companyName = $order->get_billing_company() ? $order->get_billing_company() : '-';
   curl_setopt_array($curl, array(
-    CURLOPT_URL => 'https://b2b-api-test.dickerdata.com.au//api/Order/CreateOrder',
+    CURLOPT_URL => 'https://b2b-api-test.dickerdata.com.au/api/Order/CreateOrder',
     CURLOPT_RETURNTRANSFER => true,
     CURLOPT_ENCODING => '',
     CURLOPT_MAXREDIRS => 10,
@@ -108,36 +128,27 @@ function AVP_CreateOrder($order_id = "TESKJS")
       "BranchAccountCode": "325026"
     },
     "Delivery": {
-      "CompanyName": "Test Company Pty Ltd",
+      "CompanyName": "' . $companyName . '",
       "DeliveryContact": {
-        "FirstName": "John",
-        "LastName":  "Tester",
-        "Email":     "john.tester@example.com",
-        "Phone":     "0412 345 678"
+        "FirstName": "' . $order->get_billing_first_name() . '",
+        "LastName":  "' . $order->get_billing_last_name() . '",
+        "Email":     "' . $order->get_billing_email() . '",
+        "Phone":     "' . $order->get_billing_phone() . '"
       },
       "DeliveryAddress": {
-        "CompanyName": "Test Company Pty Ltd",
-        "Address01":   "1 Test Street",
-        "Address02":   "Suite 100",
-        "Suburb":      "Sydney",
-        "State":       "NSW",
-        "Postcode":    "2000",
-        "Country":     "AU"
+        "CompanyName": "' . $companyName . '",
+        "Address01":   "' . $order->get_billing_address_1() . '",
+        "Address02":   "' . $order->get_billing_address_2() . '",
+        "Suburb":      "' . $order->get_billing_city() . '",
+        "State":       "' . $order->get_billing_state() . '",
+        "Postcode":    "' . $order->get_billing_postcode() . '",
+        "Country":     "' . $order->get_billing_country() . '"
       },
-      "Attention":      "Attn: John Tester",
+      "Attention":      "' . $order->get_billing_first_name() . '",
       "PartShipped":    false,
       "ShippingMethod": "DropShip"
     },
-    "Items": [
-      {
-        "Product": {
-          "PartNumber":     "83Z45AA",
-          "Quantity":       1,
-          "UnitPrice":      2000,
-          "UseSystemPrice": true
-        }
-      }
-    ]
+    "Items": ' . json_encode($items) . '
   }
 }
 ',
