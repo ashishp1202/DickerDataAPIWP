@@ -48,6 +48,7 @@ function AVP_AccessKeyRequest()
   $jsonResponse = json_decode($response);
   curl_close($curl);
   if (isset($jsonResponse->AccessKey) && !empty($jsonResponse->AccessKey)) {
+    AVP_all_request_response_log("AVP_AccessKeyRequest", $jsonResponse);
     return $jsonResponse->AccessKey;
   }
 }
@@ -82,6 +83,7 @@ function AVP_GetProductPriceBySKU(array $sku = PRODUCTSKUSARR)
   ));
 
   $response = curl_exec($curl);
+  AVP_all_request_response_log("AVP_GetProductPriceBySKU", $response);
   return json_decode($response);
 }
 
@@ -109,8 +111,6 @@ function AVP_CreateOrder(int $order_id)
       ]
     ];
   }
-  echo "<pre>";
-  print_r(json_encode($items));
   $companyName = $order->get_billing_company() ? $order->get_billing_company() : '-';
   curl_setopt_array($curl, array(
     CURLOPT_URL => 'https://b2b-api-test.dickerdata.com.au/api/Order/CreateOrder',
@@ -163,6 +163,6 @@ function AVP_CreateOrder(int $order_id)
   ));
 
   $response = curl_exec($curl);
-
+  AVP_all_request_response_log("AVP_CreateOrder", array('API Response' => $response, 'order_id' => $order_id, 'items' => $items));
   return json_decode($response);
 }

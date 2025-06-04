@@ -16,6 +16,7 @@ function dickerdata_custom_hourly_function()
     if (isset($getProductDataBySKU->Out) && !empty($getProductDataBySKU->Out)) {
       foreach ($getProductDataBySKU->Out as $productData) {
         add_custom_product_from_object_dickerdata($productData);
+        AVP_all_request_response_log("dickerdata_custom_hourly_function", array('API Response' => $productData));
       }
     }
   }
@@ -105,5 +106,40 @@ function add_custom_product_from_object_dickerdata($product_data)
   }
 
 
+  return $product_id;
+}
+
+function add_only_unitPrice_from_object_dickerdata($product_data)
+{
+  if (!class_exists('WC_Product')) {
+    return;
+  }
+
+  $sku = sanitize_text_field($product_data->PartNumber);
+  if (empty($sku)) {
+    return;
+  }
+
+  // Check for existing product by SKU
+  $existing_product_id = wc_get_product_id_by_sku($sku);
+  $product = $existing_product_id ? wc_get_product($existing_product_id) : null;
+
+  $is_new_product = false;
+
+  if (!$product || !($product instanceof WC_Product)) {
+    // SKU must not exist anywhere to create new
+    if (wc_get_product_id_by_sku($sku)) {
+      error_log("Cannot create product — SKU '{$sku}' already exists.");
+      return;
+    }
+
+    $product = new WC_Product_Simple();
+    $product->set_sku($sku);
+    $is_new_product = true;
+  }
+
+  // Save product
+  $product_id = $product->save();
+  add_post_meta($product_id, '_dicker_product_unit_price', $product_data->UnitPrice, true);
   return $product_id;
 }
